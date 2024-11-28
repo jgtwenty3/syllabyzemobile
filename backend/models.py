@@ -19,10 +19,11 @@ class User(db.Model, SerializerMixin):
     study_hours = db.Column(db.Integer, nullable=True)
 
     syllabi = db.relationship("Syllabus", back_populates="user", cascade="all, delete-orphan")
-    study_plans = db.relationship("StudyPlans", back_populates="user", cascade="all, delete-orphan")
-    courses = db.relationship('Courses', back_populates = "user", cascade = "all, delete-orphan")
-    
+    study_plans = db.relationship("StudyPlan", back_populates="user", cascade="all, delete-orphan")
+    courses = db.relationship('Course', back_populates="user", cascade="all, delete-orphan")  # Corrected here
+
     serialize_rules = ("-syllabi.user", "-study_plans.user", "-_password_hash")
+
 
 
     @hybrid_property
@@ -42,10 +43,12 @@ class Course(db.Model, SerializerMixin):
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     title = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
 
     syllabi = db.relationship("Syllabus", back_populates="course", cascade="all, delete-orphan")
+    user = db.relationship("User", back_populates="courses")  # Corrected here
+    serialize_rules = ('-syllabi.course')
 
-    serialize_rules = ('-syllabus.course')
 
 class Syllabus(db.Model, SerializerMixin):
     __tablename__ = "syllabi"
@@ -60,7 +63,7 @@ class Syllabus(db.Model, SerializerMixin):
 
     user = db.relationship("User", back_populates="syllabi")
     course = db.relationship("Course", back_populates="syllabi")
-    study_plans = db.relationship("StudyPlans", back_populates="syllabus", cascade="all, delete-orphan")
+    study_plans = db.relationship("StudyPlan", back_populates="syllabus", cascade="all, delete-orphan")
 
     serialize_rules = ("-user.syllabi", "-course.syllabi", "-study_plans.syllabus")
 
@@ -92,6 +95,6 @@ class Progress(db.Model, SerializerMixin):
     completed = db.Column(db.Boolean, default=False)
     completion_time = db.Column(db.DateTime, default=datetime.utcnow)
 
-    study_plan = db.relationship("StudyPlans", back_populates="progress")
+    study_plan = db.relationship("StudyPlan", back_populates="progress")
 
     serialize_rules = ("-study_plans.progress")

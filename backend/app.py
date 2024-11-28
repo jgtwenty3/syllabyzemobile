@@ -2,39 +2,50 @@ from flask import Flask, request, session, redirect, url_for, render_template, j
 from flask_bcrypt import Bcrypt
 from sqlalchemy import desc
 from flask_socketio import SocketIO, emit
-
+from werkzeug.security import generate_password_hash
+import os
+from werkzeug.utils import secure_filename
 from config import app, db, migrate, api
 
-from models import db, User, Syllabus, StudyPlans, Progress
+from models import db, User, Syllabus, StudyPlan, Progress
 
 def home():
     return ''
 
-@app.route('/signup', methods = ['POST'])
+from flask import Flask, request, jsonify
+from werkzeug.security import generate_password_hash
+from models import db, User  # Make sure you import your db and User model
+
+app = Flask(__name__)
+
+@app.route('/signup', methods=['POST'])
 def signup():
     json_data = request.get_json()
 
-    required_fields = ['firstName','lastName','email', 'password']
-    for field in required_fields: 
+    required_fields = ['firstName', 'lastName', 'email', 'password']
+    for field in required_fields:
         if field not in json_data:
-            return {'error': f'Missing {field}'},400
+            return jsonify({'error': f'Missing {field}'}), 400
     
     valid_roles = ['admin', 'worker', 'user']
     if json_data.get('role') not in valid_roles:
-        return {'error': f'Invalid user role. Must be one of :{",".join(valid_roles)}'},
+        return jsonify({'error': f'Invalid user role. Must be one of: {",".join(valid_roles)}'}), 400
     
+    # Create a new user object
     newUser = User(
-    first_name=json_data['firstName'],
-    last_name=json_data['lastName'],
-    password_hash=generate_password_hash(json_data['password']),
-    email=json_data['email'],
-)
+        first_name=json_data['firstName'],
+        last_name=json_data['lastName'],
+        password_hash=generate_password_hash(json_data['password']),
+        email=json_data['email'],
+    )
 
-
+    # Add the user to the database and commit
     db.session.add(newUser)
     db.session.commit()
 
-    return {'message': 'User Registered Succesfully'}, 201
+    # Return a success message
+    return jsonify({'message': 'User registered successfully'}), 201
+
 
 @app.route('/login', methods = ['POST'])
 def login():
@@ -61,11 +72,14 @@ def login():
 @app.route('/check_session', methods=['GET'])
 def check_session():
     user_id = session.get('user_id')
+    if user_id is None:
+        return {"error": "Unauthorized"}, 401
 
-    if user_id is not None: 
-        user = User.query.get(user_id)
-        if user: 
-            return user.to_dict(),200
+    user = User.query.get(user_id)
+    if user:
+        return user.to_dict(), 200
+    return {"error": "User not found"}, 404
+
     
 @app.route('/logout', methods = ['DELETE'])
 def logout():
@@ -129,14 +143,14 @@ def studyplans():
         return {"error": "Unauthorized"}, 401
 
     if request.method == 'GET':
-        study_plans = StudyPlans.query.filter_by(user_id=user_id).all()
+        study_plans = StudyPlan.query.filter_by(user_id=user_id).all()
         return {"data": [sp.to_dict() for sp in study_plans]}, 200
 
     elif request.method == 'POST':
         json_data = request.get_json()
 
         try:
-            new_study_plan = StudyPlans(
+            new_study_plan = StudyPlan(
                 user_id=user_id,
                 plan_data=json_data.get('plan_data'),
                 status=json_data.get('status'),
@@ -164,7 +178,7 @@ def studyplans():
 
     elif request.method == 'DELETE':
         study_plan_id = request.args.get('id')  # Assuming ID is passed as query param
-        study_plan = StudyPlans.query.filter_by(user_id=user_id, id=study_plan_id).first()
+        study_plan = StudyPlan.query.filter_by(user_id=user_id, id=study_plan_id).first()
 
         if not study_plan:
             return {"error": "Study plan not found"}, 404
@@ -248,8 +262,6 @@ def syllabus_details(syllabus_id):
     return syllabus.to_dict(), 200
 
 
-import os
-from werkzeug.utils import secure_filename
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 UPLOAD_FOLDER = 'uploads/syllabi'  # Define the folder where files will be stored
