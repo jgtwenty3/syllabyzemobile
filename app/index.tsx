@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: '40%', // Adjust width to control space
+    width: '40%', 
   },
 });
 

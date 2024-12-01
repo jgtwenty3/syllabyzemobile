@@ -46,13 +46,49 @@ export const signUp = async (userData: NewUser) => {
     }
   };
 
-  export const getCurrentUser = async()=>{
-    const [user, setUser] = useState(null);
+  export const checkSession = async () => {
+    try {
+      const response = await fetch(`${dbURL}/check_session`, {
+        method: "GET",
+        credentials: "include", 
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (response.ok) {
+        const user = await response.json();
+        return user; 
+      } else if (response.status === 401) {
+        console.error("Unauthorized: Session not found or expired.");
+        return null;
+      } else {
+        console.error("Error fetching session:", await response.json());
+        return null;
+      }
+    } catch (error) {
+      console.error("Error in checkSession:", error);
+      return null;
+    }
+  };
 
-    await fetch(`${dbURL}/check_session`)
-      .then(res => res.json())
-      .then(data => setUser(data))
-      .catch(error => console.log('Error fetching user session'));
-    
-  }
+  export const logout = async () => {
+    try {
+      const response = await fetch(`${dbURL}/logout`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+  
+      if (response.status === 204) {
+        console.log("Logout successful");
+        return true;
+      } else {
+        console.error("Error during logout:", await response.json());
+        return false;
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      return false;
+    }
+  };
   

@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, Image, Alert, TouchableOpacity } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 import FormField from "@/components/FormField";
 import { signIn } from "@/lib/queries";
-import { User } from "@/types"; // Import your types
 import { router } from "expo-router";
 
 const SignIn = () => {
@@ -102,6 +101,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2D2D2D",
     marginBottom: 20,
+    fontFamily:'Josefin-Sans'
   },
   button: {
     marginTop: 20,

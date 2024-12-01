@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 const StudyPlansPage = () => {
   return (
-    <SafeAreaView>
+    <SafeAreaView style = {styles.container}>
       <Text>StudyPlansPage</Text>
     </SafeAreaView>
   )
@@ -12,4 +12,9 @@ const StudyPlansPage = () => {
 
 export default StudyPlansPage
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  container:{
+    backgroundColor:"#D9F2FF",
+    flex:1
+  }
+})
