@@ -24,6 +24,7 @@ export default function App() {
       <View style = {styles.buttonContainer}>
         <Button title = " Login "   onPress={()=>router.push("/SignIn")} />
         <Button title = "Sign Up"  onPress={()=>router.push("/SignUp")}/>
+        
       </View>
   
     </SafeAreaView>

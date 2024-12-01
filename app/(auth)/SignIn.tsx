@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View, Image, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FormField from "@/components/FormField";
-import { signUp } from "@/lib/queries";
-import { NewUser, User } from "@/types"; // Import your types
+import { signIn } from "@/lib/queries";
+import { User } from "@/types"; // Import your types
 import { router } from "expo-router";
 
 const SignIn = () => {
@@ -15,18 +15,25 @@ const SignIn = () => {
   });
 
   const submit = async () => {
-    if ( form.email === "" || form.password === "") {
+    const { email, password } = form;
+  
+    if (email === "" || password === "") {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
+  
     setSubmitting(true);
+  
     try {
-      await signIn(form);
+      await signIn(email, password); // Pass email and password as separate arguments
+      router.push("/(tabs)/home"); // Navigate to home or dashboard on successful login
     } catch (error) {
-      Alert.alert("Error", "There was an issue signing up. Please try again.");
+      Alert.alert("Error", "There was an issue signing in. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -58,7 +65,7 @@ const SignIn = () => {
           onPress={submit}
           disabled={isSubmitting}
         >
-          <Text style={styles.buttonText}>{isSubmitting ? "Submitting..." : "Sign Up"}</Text>
+          <Text style={styles.buttonText}>{isSubmitting ? "Submitting..." : "Login"}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, isSubmitting && styles.buttonDisabled]}

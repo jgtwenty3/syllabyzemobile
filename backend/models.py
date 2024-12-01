@@ -14,29 +14,26 @@ class User(db.Model, SerializerMixin):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
-    _password_hash = db.Column(db.String(100), nullable=False)
+    _password_hash = db.Column(db.String, nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     study_hours = db.Column(db.Integer, nullable=True)
 
     syllabi = db.relationship("Syllabus", back_populates="user", cascade="all, delete-orphan")
     study_plans = db.relationship("StudyPlan", back_populates="user", cascade="all, delete-orphan")
-    courses = db.relationship('Course', back_populates="user", cascade="all, delete-orphan")  # Corrected here
+    courses = db.relationship('Course', back_populates="user", cascade="all, delete-orphan")
 
     serialize_rules = ("-syllabi.user", "-study_plans.user", "-_password_hash")
 
-
-
     @hybrid_property
-    def password(self):
+    def password_hash(self):
         raise AttributeError("Password is not readable.")
 
-    @password.setter
-    def password(self, plaintext):
-        self._password_hash = bcrypt.generate_password_hash(plaintext).decode("utf-8")
-
-    def verify_password(self, plaintext):
-        return bcrypt.check_password_hash(self._password_hash, plaintext)
-
+    @password_hash.setter
+    def password_hash(self, password):
+        # Hash password only once
+        self._password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+    def authenticate(self, password): 
+        return bcrypt.check_password_hash(self._password_hash, password)
 
 class Course(db.Model, SerializerMixin):
     __tablename__ = "courses"

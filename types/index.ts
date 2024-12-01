@@ -9,8 +9,8 @@ export type NewUser = {
 
 export type User={
     id:string;
-    firstName:string;
-    lastName:string;
+    firstName?:string;
+    lastName?:string;
     email:string;
    
 

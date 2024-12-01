@@ -23,6 +23,7 @@ const SignUp = () => {
     setSubmitting(true);
     try {
       await signUp(form);
+      router.push("/(tabs)/home")
     } catch (error) {
       Alert.alert("Error", "There was an issue signing up. Please try again.");
     }

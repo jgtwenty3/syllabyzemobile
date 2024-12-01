@@ -6,17 +6,10 @@ from werkzeug.security import generate_password_hash
 import os
 from werkzeug.utils import secure_filename
 from config import app, db, migrate, api
-
 from models import db, User, Syllabus, StudyPlan, Progress
 
 def home():
     return ''
-
-from flask import Flask, request, jsonify
-from werkzeug.security import generate_password_hash
-from models import db, User  # Make sure you import your db and User model
-
-app = Flask(__name__)
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -27,17 +20,9 @@ def signup():
         if field not in json_data:
             return jsonify({'error': f'Missing {field}'}), 400
     
-    valid_roles = ['admin', 'worker', 'user']
-    if json_data.get('role') not in valid_roles:
-        return jsonify({'error': f'Invalid user role. Must be one of: {",".join(valid_roles)}'}), 400
-    
     # Create a new user object
-    newUser = User(
-        first_name=json_data['firstName'],
-        last_name=json_data['lastName'],
-        password_hash=generate_password_hash(json_data['password']),
-        email=json_data['email'],
-    )
+    newUser = User( first_name=json_data['firstName'], last_name=json_data['lastName'], email=json_data['email'], )
+    newUser.password_hash = json_data['password']
 
     # Add the user to the database and commit
     db.session.add(newUser)
@@ -47,27 +32,26 @@ def signup():
     return jsonify({'message': 'User registered successfully'}), 201
 
 
-@app.route('/login', methods = ['POST'])
+@app.route('/login', methods=['POST'])
 def login():
-    json_data = request.get_json()
+    # Parse the JSON request body
+    data = request.get_json()
 
-    required_fields = ['email', 'password']
-    for field in required_fields: 
-        if field not in json_data:
-            return {'error':f'Missing required field:{field}'}, 400
-
-    user = User.query.filter(User.email == json_data.get('email')).first()
-
-    if not user: 
-        return {'error': 'User not found'}, 404
+    if not data or 'email' not in data or 'password' not in data:
+        return {'error': 'Bad Request, missing email or password'}, 400
     
-    if not user.authenticate(json_data.get('password')):
-         return {'error': 'Invalid password'}, 401
+    email = data['email']
+    password = data['password']
 
-    session['user_id'] = user.id
-   
+    user = User.query.filter(User.email == email).first()
 
-    return user.to_dict() ,200
+    if user and user.authenticate(password):
+        session['user_id'] = user.id
+        return jsonify(user.to_dict()), 200  # Ensure the response is JSON
+    else:
+        return jsonify({'error': '401 Unauthorized'}), 401  # Ensure the error is also JSON
+
+
 
 @app.route('/check_session', methods=['GET'])
 def check_session():

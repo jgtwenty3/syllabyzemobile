@@ -26,7 +26,7 @@ if __name__ == '__main__':
                 email=faker.email(),
                 study_hours=randint(10, 50)  # Random study hours
             )
-            user.password = faker.password()  # Set password using the setter
+            user.password_hash = faker.password()  # Set password using the setter
             users.append(user)
             db.session.add(user)
 

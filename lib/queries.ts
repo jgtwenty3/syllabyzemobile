@@ -1,4 +1,5 @@
-import { NewUser } from "@/types";
+import { NewUser, User } from "@/types";
+import { useState } from "react";
 
 const dbURL = process.env.EXPO_PUBLIC_API_URL
 
@@ -23,4 +24,35 @@ export const signUp = async (userData: NewUser) => {
       console.error("Error during sign-up:", error);
     }
   };
+
+  export const signIn = async (email:string, password:string) => {
+    try {
+      const userData = { email, password };
+  
+      const response = await fetch(`${dbURL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      })
+      
+      .then(res =>res.json())
+  
+
+    } catch (error) {
+      console.error("Error during sign-in:", error);
+      throw error;
+    }
+  };
+
+  export const getCurrentUser = async()=>{
+    const [user, setUser] = useState(null);
+
+    await fetch(`${dbURL}/check_session`)
+      .then(res => res.json())
+      .then(data => setUser(data))
+      .catch(error => console.log('Error fetching user session'));
+    
+  }
   
