@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash
 import os
 from werkzeug.utils import secure_filename
 from config import app, db, migrate, api
-from models import db, User, Syllabus, StudyPlan, Progress
+from models import db, User, Course, Syllabus, StudyPlan, Progress 
 
 def home():
     return ''
@@ -15,41 +15,65 @@ def home():
 def signup():
     json_data = request.get_json()
 
-    required_fields = ['firstName', 'lastName', 'email', 'password']
+    required_fields = ['first_name', 'last_name', 'email', 'password']
     for field in required_fields:
         if field not in json_data:
             return jsonify({'error': f'Missing {field}'}), 400
-    
-    # Create a new user object
-    newUser = User( first_name=json_data['firstName'], last_name=json_data['lastName'], email=json_data['email'], )
-    newUser.password_hash = json_data['password']
 
-    # Add the user to the database and commit
-    db.session.add(newUser)
-    db.session.commit()
+    try:
+        # Create a new user object
+        new_user = User(
+            first_name=json_data['first_name'],
+            last_name=json_data['last_name'],
+            email=json_data['email'],
+        )
+        # This triggers the password_hash setter
+        new_user.password_hash = json_data['password']
 
-    # Return a success message
-    return jsonify({'message': 'User registered successfully'}), 201
+        # Add the user to the database
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Store user ID in the session
+        session['user_id'] = new_user.id
+
+        # Return success response
+        return jsonify({'message': 'User registered successfully'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+
 
 
 @app.route('/login', methods=['POST'])
 def login():
-    # Parse the JSON request body
-    data = request.get_json()
+    json_data = request.get_json()
 
-    if not data or 'email' not in data or 'password' not in data:
-        return {'error': 'Bad Request, missing email or password'}, 400
-    
-    email = data['email']
-    password = data['password']
+    # Validate required fields
+    required_fields = ['email', 'password']
+    for field in required_fields:
+        if field not in json_data:
+            return jsonify({'error': f'Missing required field: {field}'}), 400
 
-    user = User.query.filter(User.email == email).first()
+    # Find user by email
+    user = User.query.filter_by(email=json_data['email']).first()
 
-    if user and user.authenticate(password):
-        session['user_id'] = user.id
-        return jsonify(user.to_dict()), 200  # Ensure the response is JSON
-    else:
-        return jsonify({'error': '401 Unauthorized'}), 401  # Ensure the error is also JSON
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Authenticate user
+    if not user.authenticate(json_data['password']):
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    # Update session with user_id
+    session['user_id'] = user.id
+
+    # Return serialized user data
+    return jsonify({
+        'message': 'Login successful',
+        'user': user.to_dict()  # Assuming serialization rules are defined
+    }), 200
 
 
 
@@ -71,6 +95,53 @@ def logout():
     session.pop('user_role', None)
 
     return {}, 204
+
+@app.route('/courses', methods=['GET', 'POST', 'PATCH', 'DELETE'])
+def courses():
+    user_id = session.get('user_id')
+    if not user_id:
+        return {"error": "Unauthorized"}, 401
+
+    if request.method == 'GET':
+        courses = Course.query.filter_by(user_id=user_id).all()
+        return {"data": [c.to_dict() for c in courses]}, 200
+
+    elif request.method == 'POST':
+        json_data = request.get_json()
+        try:
+            new_course = Course(
+                user_id=user_id,
+                title=json_data['title'],  # Ensure 'title' is passed in the request payload
+            )
+            db.session.add(new_course)
+            db.session.commit()
+            return new_course.to_dict(), 201
+        except KeyError:
+            return {"error": "Missing required fields"}, 400
+    
+    elif request.method == 'PATCH':
+        json_data = request.get_json()
+        course_id = json_data.get('id')
+        course = Course.query.filter_by(user_id=user_id, id=course_id).first()
+        if not course:
+            return {"error": "Course not found"}, 404
+
+        for key, value in json_data.items():
+            setattr(course, key, value)
+        db.session.commit()
+        return course.to_dict(), 200
+
+    elif request.method == 'DELETE':
+        course_id = request.args.get('id')  # Assuming ID is passed as query param
+        course = Course.query.filter_by(user_id=user_id, id=course_id).first()
+        if not Course:
+            return {"error": "Course not found"}, 404
+
+        db.session.delete(course)
+        db.session.commit()
+        return {}, 204
+       
+
 
 @app.route('/syllabi', methods=['GET', 'POST', 'PATCH', 'DELETE'])
 def syllabi():

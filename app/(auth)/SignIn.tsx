@@ -24,8 +24,8 @@ const SignIn = () => {
     setSubmitting(true);
   
     try {
-      await signIn(email, password); // Pass email and password as separate arguments
-      router.push("/(tabs)/home"); // Navigate to home or dashboard on successful login
+      const user = await signIn(email, password); 
+      router.push("/(tabs)/home"); 
     } catch (error) {
       Alert.alert("Error", "There was an issue signing in. Please try again.");
     } finally {

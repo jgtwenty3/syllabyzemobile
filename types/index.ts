@@ -24,3 +24,8 @@ export type updateUser ={
     
 
 }
+
+export type NewCourse = {
+    user_id:string,
+    title:string;
+}
